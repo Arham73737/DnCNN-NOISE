@@ -47,8 +47,8 @@ def apply_bilateral_filter(image, d=9, sigma_color=75, sigma_space=75):
     return cv2.bilateralFilter(image, d, sigma_color, sigma_space)
 
 
-def apply_nlm_filter(image, h=10, template_window=7, search_window=21):
-    """Non-Local Means denoising."""
+def apply_nlm_filter(image, h=10, template_window=5, search_window=15):
+    """Non-Local Means denoising (optimized window size for cloud CPU)."""
     if image.ndim == 3:
         return cv2.fastNlMeansDenoisingColored(
             image, None, h, h, template_window, search_window

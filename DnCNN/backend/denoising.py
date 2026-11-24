@@ -115,6 +115,7 @@ def apply_dncnn(image_bgr):
     with torch.no_grad():
         output = model(tensor)
 
+    del tensor
     output = output.squeeze(0).permute(1, 2, 0).cpu().numpy()
     output = np.clip(output, 0.0, 1.0) * 255.0
     output = output.astype(np.uint8)

@@ -68,8 +68,8 @@ def denoise():
     if image_bgr is None:
         return jsonify({"error": "Could not read image. File may be corrupted."}), 400
 
-    # Auto-resize large images to prevent 512MB RAM Out-Of-Memory crashes on cloud servers
-    max_dim = 720
+    # Auto-resize images to fit safely within Render's 512MB RAM limit
+    max_dim = 500
     h, w = image_bgr.shape[:2]
     if max(h, w) > max_dim:
         scale = max_dim / float(max(h, w))

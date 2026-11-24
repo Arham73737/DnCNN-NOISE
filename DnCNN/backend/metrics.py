@@ -59,21 +59,30 @@ def no_reference_scores(image_bgr):
     """
     Returns BRISQUE if `piq` is installed, else None.
     NOTE: `piq` only ships a BRISQUE implementation, not NIQE -- so `niqe`
-    always comes back as None here. Kept in the dict/UI for easy extension
-    later if you add a NIQE-capable library.
+    always comes back as None here.
     """
     if not PIQ_AVAILABLE:
         return {"niqe": None, "brisque": None}
 
-    img = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+    # Downscale for BRISQUE to keep memory negligible (<5MB) and fast on cloud servers
+    h, w = image_bgr.shape[:2]
+    if max(h, w) > 256:
+        scale = 256.0 / max(h, w)
+        img_eval = cv2.resize(image_bgr, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+    else:
+        img_eval = image_bgr
+
+    img = cv2.cvtColor(img_eval, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
     tensor = torch.from_numpy(img).permute(2, 0, 1).unsqueeze(0)
 
     scores = {"niqe": None, "brisque": None}
     try:
-        scores["brisque"] = float(piq.brisque(tensor, data_range=1.0))
+        with torch.no_grad():
+            scores["brisque"] = float(piq.brisque(tensor, data_range=1.0))
     except Exception as e:
         print("BRISQUE failed:", e)
 
+    del tensor
     return scores
 
 
