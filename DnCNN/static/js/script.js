@@ -131,11 +131,20 @@ uploadForm.addEventListener("submit", async (e) => {
       body: formData,
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error || "Failed to process image.");
+      let errMsg = `Server error (${response.status})`;
+      try {
+        const errJson = await response.json();
+        if (errJson && errJson.error) errMsg = errJson.error;
+      } catch (_) {
+        if (response.status === 502) {
+          errMsg = "Server ran out of memory or timed out (502 Bad Gateway). Please try a smaller image.";
+        }
+      }
+      throw new Error(errMsg);
     }
+
+    const data = await response.json();
 
     renderResults(data);
   } catch (err) {

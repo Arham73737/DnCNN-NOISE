@@ -68,7 +68,19 @@ def denoise():
     if image_bgr is None:
         return jsonify({"error": "Could not read image. File may be corrupted."}), 400
 
-    results = run_all_methods(image_bgr)
+    # Auto-resize large images to prevent 512MB RAM Out-Of-Memory crashes on cloud servers
+    max_dim = 720
+    h, w = image_bgr.shape[:2]
+    if max(h, w) > max_dim:
+        scale = max_dim / float(max(h, w))
+        new_w, new_h = max(1, int(w * scale)), max(1, int(h * scale))
+        image_bgr = cv2.resize(image_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+
+    try:
+        results = run_all_methods(image_bgr)
+    except Exception as e:
+        app.logger.error(f"Denoising error: {e}", exc_info=True)
+        return jsonify({"error": f"Denoising failed: {str(e)}"}), 500
 
     response_methods = {}
     evaluations = {}
