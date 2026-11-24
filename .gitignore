@@ -22,3 +22,9 @@ dist/
 .DS_Store
 Thumbs.db
 *.log
+
+# App user data
+DnCNN/uploads/*
+!DnCNN/uploads/.gitkeep
+DnCNN/outputs/*
+!DnCNN/outputs/.gitkeep
