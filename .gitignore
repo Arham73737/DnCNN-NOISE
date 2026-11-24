@@ -1,0 +1,24 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+**/*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+**/venv/
+**/env/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# PyTorch / IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

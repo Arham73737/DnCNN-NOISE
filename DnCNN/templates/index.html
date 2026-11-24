@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intelligent Image Denoising</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-badge">B.Tech Project • Deep Residual Learning &amp; Classical Vision</div>
+    <h1>Intelligent Image Denoising</h1>
+    <p>Classical filters + DnCNN, compared side-by-side with 3D CoverFlow</p>
+  </header>
+
+  <main class="container">
+
+    <section class="upload-card" id="upload-card">
+      <form id="upload-form">
+        <label for="file-input" class="drop-zone" id="drop-zone">
+          <div class="drop-icon">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <span id="drop-zone-text">Click to choose a noisy image, or drag &amp; drop it here</span>
+          <span class="drop-hint">Supports PNG, JPG, JPEG, BMP (up to 16MB)</span>
+          <img id="preview-img" class="preview-img hidden" alt="Preview" />
+        </label>
+        <input type="file" id="file-input" name="image" accept=".png,.jpg,.jpeg,.bmp" hidden />
+
+        <button type="submit" id="submit-btn" disabled>
+          <span>Denoise Image with All 7 Methods</span>
+        </button>
+      </form>
+      <p id="error-msg" class="error-msg hidden"></p>
+    </section>
+
+    <section id="loading" class="loading hidden">
+      <div class="spinner-container">
+        <div class="spinner"></div>
+        <div class="spinner-glow"></div>
+      </div>
+      <p class="loading-title">Applying filters &amp; executing DnCNN inference...</p>
+      <p class="loading-subtitle">Computing noise variance, Laplacian sharpness, and BRISQUE scores</p>
+    </section>
+
+    <section id="results" class="results hidden">
+
+      <!-- Original Corrupted Image Card -->
+      <div class="original-block">
+        <div class="original-header">
+          <span class="badge badge-original">Input Reference</span>
+          <h2>Original (Noisy) Image</h2>
+        </div>
+        <div class="original-img-wrapper">
+          <img id="original-img" alt="Original noisy image" />
+        </div>
+      </div>
+
+      <!-- Prominent Verdict & Recommendation Banner -->
+      <div id="recommendation" class="recommendation hidden">
+        <h2 id="recommendation-name" class="rec-name"></h2>
+
+        <!-- The explicit line explaining which filter gives better output -->
+        <div class="verdict-banner">
+          <div class="verdict-content">
+            <p id="verdict-line" class="verdict-text"></p>
+          </div>
+        </div>
+
+        <!-- Quick comparison highlights -->
+        <div class="highlights-row" id="highlights-row">
+          <div class="highlight-chip chip-balance">
+            <span class="chip-title">⭐ Best Balance</span>
+            <span class="chip-val" id="hl-best">-</span>
+          </div>
+          <div class="highlight-chip chip-fast">
+            <span class="chip-title">⚡ Fastest</span>
+            <span class="chip-val" id="hl-fastest">-</span>
+          </div>
+          <div class="highlight-chip chip-noise">
+            <span class="chip-title">🛡️ Lowest Noise</span>
+            <span class="chip-val" id="hl-noise">-</span>
+          </div>
+          <div class="highlight-chip chip-sharp">
+            <span class="chip-title">🔍 Highest Sharpness</span>
+            <span class="chip-val" id="hl-sharpness">-</span>
+          </div>
+        </div>
+
+        <div class="rec-details">
+          <button type="button" class="toggle-reasons-btn" id="toggle-reasons-btn">
+            <span>Show detailed scoring metrics</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <ul id="recommendation-reasons" class="rec-reasons hidden"></ul>
+        </div>
+        <p class="rec-disclaimer">
+          Blind Image Quality Assessment (NR-IQA) based on Immerkaer noise variance, Laplacian edge gradient, and Natural Scene Statistics.
+        </p>
+      </div>
+
+      <!-- Results Header & View Mode Switcher -->
+      <div class="results-header-bar">
+        <div>
+          <h2>All Denoised Results</h2>
+          <p class="section-subtitle">Navigate through the 3D showcase cards to inspect fine texture details</p>
+        </div>
+        <div class="view-switch">
+          <button type="button" class="view-btn active" id="btn-view-coverflow">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            <span>3D Showcase</span>
+          </button>
+          <button type="button" class="view-btn" id="btn-view-grid">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            <span>Grid View</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D CoverFlow Carousel View (Inspired by User's Reference) -->
+      <div id="coverflow-view" class="coverflow-wrapper">
+        <div class="coverflow-stage" id="coverflow-stage">
+          <button type="button" class="coverflow-nav-btn prev" id="cf-prev" aria-label="Previous card">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <div class="coverflow-track" id="coverflow-track">
+            <!-- Cards dynamically rendered here -->
+          </div>
+
+          <button type="button" class="coverflow-nav-btn next" id="cf-next" aria-label="Next card">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Carousel navigation indicators -->
+        <div class="coverflow-controls">
+          <div class="coverflow-dots" id="coverflow-dots"></div>
+          <span class="coverflow-hint">Tip: Click any side card or use ← → arrow keys to navigate</span>
+        </div>
+      </div>
+
+      <!-- Standard Grid View (Optional Toggle) -->
+      <div id="grid-view" class="results-grid hidden"></div>
+
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>B.Tech Project — Intelligent Image Denoising Using Classical Filters and Deep Residual Learning</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
